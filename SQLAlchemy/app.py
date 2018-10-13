@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -24,7 +25,7 @@ class User(db.Model):
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50))
-
+    # post = db.relationship('Post')
     def __init__(self, name):
         self.name = name
 
@@ -38,8 +39,7 @@ class Post(db.Model):
     pub_date = db.Column(db.DateTime)
 
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
-    category = db.relationship('Category',
-        backref=db.backref('posts', lazy='dynamic'))
+    category = db.relationship('Category',backref=db.backref('posts', lazy='dynamic'))
 
     def __init__(self, title, body, category, pub_date=None):
         self.title = title
@@ -52,11 +52,42 @@ class Post(db.Model):
     def __repr__(self):
         return '<Post %r>' % self.title
 
-if __name__ == '__main__':
-	db.create_all()
-	python = Category('Python')
-	post = Post('Hello Python','I love python',python)
 
-	db.session.add(python)
-	# db.session.add(post)
-	db.session.commit()
+# registrations = db.Table('registrations',
+#                     db.Column('student_id', db.Integer, db.ForeignKey('students.id')),
+#                     db.Column('class_id', db.Integer, db.ForeignKey('classes.id')))
+
+class Registration(db.Model):
+    '''关联表'''
+    __tablename__ = 'registrations'
+    student_id = db.Column(db.Integer, db.ForeignKey('students.id'), primary_key=True)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), primary_key=True)
+    create_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Student(db.Model):
+    __tablename__ = 'students'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+    _class = db.relationship('Registration', foreign_keys=[Registration.student_id],
+                             backref=db.backref('student', lazy="joined"), lazy="dynamic")
+    def __repr__(self):
+        return '<Student: %r>' %self.name
+class Class(db.Model):
+    __tablename__ = 'classes'
+    id = db.Column(db.Integer, primary_key=True)
+    students = db.relationship('Registration', foreign_keys=[Registration.class_id],
+                               backref=db.backref('_class', lazy="joined"), lazy="dynamic")
+    name = db.Column(db.String(64))
+    def __repr__(self):
+        return '<Class: %r>' %self.name
+
+# if __name__ == '__main__':
+#     db.drop_all()
+#     db.create_all()
+# 	python = Category('Python')
+# 	post = Post('Hello Python','I love python',python)
+
+# 	db.session.add(python)
+# 	# db.session.add(post)
+# 	db.session.commit()
